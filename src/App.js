@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useMemo } from 'react'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { Canvas, extend, useFrame, useThree } from 'react-three-fiber'
 import { useSpring, a } from 'react-spring/three'
@@ -7,24 +7,14 @@ import * as THREE from 'three'
 import JSONfont from "./fonts/Cascadia_Code.json";
 import fonts from "./fonts";
 import { Text } from "troika-three-text";
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-
+/* import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader' */
+import Model from './Scene'
 
 
 extend({ OrbitControls, Text });
 
-const textDescription = 'This site was a test site to mess around with React-three-fiber and se how it would be to display mockups as 3D objects.'
+const textDescription = 'This site was a test site to mess around with React-three-fiber and see how it would be to display mockups as 3D objects.'
 
-const Model = () => {
-    const [model, setModel] = useState()
-
-
-    useEffect(() => {
-        new GLTFLoader().load('./scene.gltf', setModel)
-    })
-
-    return model ? <primitive object={model.scene} /> : null
-}
 
 const Controls = () => {
     const orbitRef = useRef();
@@ -69,7 +59,7 @@ const Title = () => {
     return (
         <mesh
             rotation={[-Math.PI / 2, 0, 0]}
-            position={[-90, 0, -85]}
+            position={[-90, 0, -95]}
             castShadow
         >
             <textGeometry attach='geometry' args={['Pomodoro App', textOptions]} />
@@ -79,10 +69,11 @@ const Title = () => {
     )
 }
 const Description = () => {
+    const font = new THREE.FontLoader().parse(JSONfont);
     const [rotation, setRotation] = useState([0, 0, 0, 0]);
     const [opts, setOpts] = useState({
-        font: "Philosopher",
-        fontSize: 10,
+        font: font,
+        fontSize: 12,
         color: "#99ccff",
         maxWidth: 100,
         lineHeight: 1,
@@ -144,32 +135,58 @@ const Button = () => {
     const meshRef = useRef();
     const [hovered, setHovered] = useState(false);
     const [active, setActive] = useState(false);
+    const font = new THREE.FontLoader().parse(JSONfont);
+
+    // configure font geometry
+    const textOptions = {
+        font,
+        size: 5,
+        height: 5
+    };
     const props = useSpring({
         scale: active ? [30, 15, 1] : [30, 15, 30],
         color: hovered ? 'hotpink' : 'blue',
     })
+    const text = useSpring({
+        scale: active ? [1, 1, 0.1] : [1, 1, 3],
+
+    })
+
 
     function click() { setTimeout((() => setActive(false)), 400); }
     return (
-        <a.mesh
-            ref={meshRef}
-            onPointerOver={() => setHovered(true)}
-            onPointerOut={() => setHovered(false)}
-            castShadow
-            onClick={() => {
-                setActive(!active)
-                click();
-            }}
-            scale={props.scale}
-            rotation={[-Math.PI / 2, 0, 0]}
-            position={[0, 0, 100]}
-        >
-            <boxBufferGeometry
-                attach='geometry'
-                args={[1, 1, 1]}
-            />
-            <a.meshPhysicalMaterial attach='material' color={props.color} />
-        </a.mesh>
+        <group position={[0, 0, 100]} >
+            <a.mesh
+                ref={meshRef}
+                onPointerOver={() => setHovered(true)}
+                onPointerOut={() => setHovered(false)}
+                castShadow
+                onClick={() => {
+                    setActive(!active)
+                    click();
+                }}
+                scale={props.scale}
+                rotation={[-Math.PI / 2, 0, 0]}
+                receiveShadow
+
+            >
+                <boxBufferGeometry
+                    attach='geometry'
+                    args={[1, 1, 1]}
+                />
+                <a.meshPhysicalMaterial attach='material' color={props.color} />
+
+            </a.mesh>
+            <a.mesh
+                rotation={[-Math.PI / 2, 0, 0]}
+                position={[-10, 1, 2]}
+                castShadow
+                scale={text.scale}
+            >
+                <textGeometry attach='geometry' args={['CLICK', textOptions]} castShadow />
+                <meshStandardMaterial attach='material' />
+            </a.mesh>
+        </group>
     )
 }
 
@@ -182,16 +199,15 @@ const App = () => {
                 gl.shadowMap.type = THREE.PCFSoftShadowMap
             }}
         >
-            <ambientLight intensity={0.5} />
+            <ambientLight intensity={0.4} />
             <spotLight position={[150, 200, 100]} penumbra={1} castShadow />
-            <fog attach="fog" args={["black", 100, 950]} />
+            <fog attach="fog" args={["black", 100, 800]} />
             <Controls />
-            <Phone />
             <Plane />
             <Title />
             <Description />
             <Button />
-            <Model castShadow />
+            <Model />
         </Canvas>
     )
 }
